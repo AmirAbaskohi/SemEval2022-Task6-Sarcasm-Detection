@@ -31,5 +31,3 @@ What also made ELMo interesting is how they used the language model after traini
 ![image info](./images/elmo2.png)
 
 Here, function F multiplies each vector with weights from the hidden representations of the language model.
-
-## Code

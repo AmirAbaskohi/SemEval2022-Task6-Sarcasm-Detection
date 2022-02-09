@@ -6,13 +6,15 @@ import warnings
 warnings.filterwarnings('ignore')
 from sklearn.model_selection import train_test_split
 import torch
-from torch import nn
 from torch.utils.data import Dataset
+from transformers import DistilBertTokenizerFast,DistilBertForSequenceClassification
 from transformers import Trainer,TrainingArguments
-from transformers import AutoModelForSequenceClassification
-from transformers import AutoTokenizer
+from transformers import DistilBertTokenizerFast, BertForMaskedLM
+from transformers import AutoConfig
+from transformers import AutoModel
 from sklearn.metrics import accuracy_score, f1_score
-
+from torch import nn
+from transformers import Trainer
 
 class SarcasimDataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels):
@@ -38,23 +40,6 @@ class SarcasimTestDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.encodings)
 
-def compute_metrics(p):
-    pred, labels = p
-    pred = np.argmax(pred, axis=1)
-
-    accuracy = accuracy_score(y_true=labels, y_pred=pred)
-    #recall = recall_score(y_true=labels, y_pred=pred)
-    #precision = precision_score(y_true=labels, y_pred=pred)
-    f1 = f1_score(labels, pred, average='weighted')
-
-    return {"accuracy": accuracy,"f1_score":f1}
-
-def labels(x):
-    if x == 0:
-        return 0
-    else:
-        return 1
-
 class CustomTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False):
         labels = inputs.get("labels")
@@ -66,35 +51,46 @@ class CustomTrainer(Trainer):
         loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
         return (loss, outputs) if return_outputs else loss
 
+def compute_metrics(p):
+    pred, labels = p
+    pred = np.argmax(pred, axis=1)
+
+    accuracy = accuracy_score(y_true=labels, y_pred=pred)
+    f1 = f1_score(labels, pred, average='weighted')
+
+    return {"accuracy": accuracy,"f1_score":f1}
+
+def labels(x):
+    if x == 0:
+        return 0
+    else:
+        return 1
+
 if __name__ == '__main__':
-    #dataset address
-    dataset_path = '../Data/Train_Dataset.csv'
-    df = pd.read_csv(dataset_path)
+    path = '../Data/Train_Dataset.csv'
+    path_test = '../Data/Test_Dataset.csv'
+
+    df = pd.read_csv(path)
+    test = pd.read_csv(path_test)
     df = df.dropna(subset=['tweet'])
 
-    train, test = train_test_split(df, test_size=0.1)
+    train = df
 
     train_tweets = train['tweet'].values.tolist()
     train_labels = train['sarcastic'].values.tolist()
-    test_tweets = test['tweet'].values.tolist()
-    test_labels = test['sarcastic']
+    test_tweets = test['text'].values.tolist()
 
     train_tweets, val_tweets, train_labels, val_labels = train_test_split(train_tweets, train_labels, 
                                                                         test_size=0.1,random_state=42,stratify=train_labels)
 
     model_name = 'detecting-sarcasim'
 
-    task='sentiment'
-    MODEL = f"cardiffnlp/twitter-roberta-base-{task}"
+    tokenizer = DistilBertTokenizerFast.from_pretrained('bert-base-cased',
+                                                        num_labels=2,loss_function_params={"weight": [0.75, 0.25]})
 
-    tokenizer = AutoTokenizer.from_pretrained(MODEL,
-                                            num_labels=2,
-                                            loss_function_params={"weight": [0.75, 0.25]}
-                                                        )
     train_encodings = tokenizer(train_tweets, truncation=True, padding=True,return_tensors = 'pt')
     val_encodings = tokenizer(val_tweets, truncation=True, padding=True,return_tensors = 'pt')
     test_encodings = tokenizer(test_tweets, truncation=True, padding=True,return_tensors = 'pt')
-
 
     train_dataset = SarcasimDataset(train_encodings, train_labels)
     val_dataset = SarcasimDataset(val_encodings, val_labels)
@@ -107,9 +103,7 @@ if __name__ == '__main__':
         load_best_model_at_end=True,
     )
 
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL)
-
-    model.save_pretrained(MODEL)
+    model = DistilBertForSequenceClassification.from_pretrained("bert-base-cased",num_labels=2)
 
     trainer = Trainer(
         model=model, args=training_args, train_dataset=train_dataset,
@@ -121,23 +115,19 @@ if __name__ == '__main__':
 
     trainer.evaluate()
 
+    test['sarcastic'] = 0
+    test_tweets = test['tweet'].values.tolist() 
+    test_labels = test['sarcastic'].values.tolist() 
+    test_encodings = tokenizer(test_tweets,truncation=True, 
+                            padding=True,return_tensors = 'pt').to("cuda") 
 
-    #TEST
-
-    pin_memory=False
     preds = trainer.predict(test_dataset=test_dataset)
-    probs = torch.from_numpy(preds[0]).softmax(1)
 
-    # convert tensors to numpy array
+    probs = torch.from_numpy(preds[0]).softmax(1)
     predictions = probs.numpy()
 
     newdf = pd.DataFrame(predictions,columns=['Negative_1','Positive_2'])
 
-
-
     results = np.argmax(predictions,axis=1)
-    test['sarcastic_result'] =  test['sarcastic'].map(labels)
 
-    print(f1_score(test_labels, test['sarcastic_result']))
-
-    model.predict(test['tweet'])
+    model.predict(test_dataset) 

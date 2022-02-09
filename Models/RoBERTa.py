@@ -117,7 +117,7 @@ def train(epoch, optimizer, loss_function):
 if __name__ == '__main__':
     
     #dataset address
-    dataset_path = '../Data/English/train.En.csv'
+    dataset_path = '../Data/Train_Dataset.csv'
     dataset = pd.read_csv(dataset_path)[["tweet", "sarcastic"]]
 
     dataset = dataset.dropna(axis = 0)

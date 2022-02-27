@@ -1,169 +1,143 @@
 import pandas as pd
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings('ignore')
+from sklearn.model_selection import train_test_split
 import torch
-from tqdm import tqdm
-from torch.utils.data import Dataset, DataLoader
-from transformers import RobertaModel, RobertaTokenizer
-import logging
-logging.basicConfig(level=logging.ERROR)
-from torch import cuda
+from torch import nn
+from torch.utils.data import Dataset
+from transformers import Trainer,TrainingArguments
+from transformers import AutoModelForSequenceClassification
+from transformers import AutoTokenizer
+from sklearn.metrics import accuracy_score, f1_score
 
 
-class ISarcasmData(Dataset):
-    def __init__(self, dataframe, tokenizer, max_len):
-        self.tokenizer = tokenizer
-        self.data = dataframe
-        self.text = dataframe.tweet
-        self.targets = self.data.sarcastic
-        self.max_len = max_len
+class SarcasimDataset(torch.utils.data.Dataset):
+    def __init__(self, encodings, labels):
+        self.encodings = encodings
+        self.labels = labels
+
+    def __getitem__(self, idx):
+        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        item['labels'] = torch.tensor(self.labels[idx])
+        return item
 
     def __len__(self):
-        return len(self.text)
+        return len(self.labels)
+    
+## Test Dataset
+class SarcasimTestDataset(torch.utils.data.Dataset):
+    def __init__(self, encodings):
+        self.encodings = encodings
 
-    def __getitem__(self, index):
-        text = str(self.text[index])
-        text = " ".join(text.split())
+    def __getitem__(self, idx):
+        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        return item
+    def __len__(self):
+        return len(self.encodings)
 
-        inputs = self.tokenizer.encode_plus(
-            text,
-            None,
-            add_special_tokens=True,
-            max_length=self.max_len,
-            pad_to_max_length=True,
-            return_token_type_ids=True
-        )
-        ids = inputs['input_ids']
-        mask = inputs['attention_mask']
-        token_type_ids = inputs["token_type_ids"]
+def compute_metrics(p):
+    pred, labels = p
+    pred = np.argmax(pred, axis=1)
 
+    accuracy = accuracy_score(y_true=labels, y_pred=pred)
+    #recall = recall_score(y_true=labels, y_pred=pred)
+    #precision = precision_score(y_true=labels, y_pred=pred)
+    f1 = f1_score(labels, pred, average='weighted')
 
-        return {
-            'ids': torch.tensor(ids, dtype=torch.long),
-            'mask': torch.tensor(mask, dtype=torch.long),
-            'token_type_ids': torch.tensor(token_type_ids, dtype=torch.long),
-            'targets': torch.tensor(self.targets[index], dtype=torch.float)
-        }
+    return {"accuracy": accuracy,"f1_score":f1}
 
-class RobertaClass(torch.nn.Module):
-    def __init__(self):
-        super(RobertaClass, self).__init__()
-        self.l1 = RobertaModel.from_pretrained("roberta-base")
-        self.pre_classifier = torch.nn.Linear(768, 768)
-        self.dropout = torch.nn.Dropout(0.3)
-        self.classifier = torch.nn.Linear(768, 2)
+def labels(x):
+    if x == 0:
+        return 0
+    else:
+        return 1
 
-    def forward(self, input_ids, attention_mask, token_type_ids):
-        output_1 = self.l1(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
-        hidden_state = output_1[0]
-        pooler = hidden_state[:, 0]
-        pooler = self.pre_classifier(pooler)
-        pooler = torch.nn.ReLU()(pooler)
-        pooler = self.dropout(pooler)
-        output = self.classifier(pooler)
-        return output
-
-def calcuate_accuracy(preds, targets):
-    n_correct = (preds==targets).sum().item()
-    return n_correct
-
-def calcuate_f1(preds, targets):
-    tp = sum((targets == 1) & (preds == 1))
-    tn = sum((targets == 0) & (preds == 0))
-    fn = sum((targets == 1) & (preds == 0))
-    fp = sum((targets == 0) & (preds == 1))
-    return (tp/(tp + 0.5*(fp+fn)))
-
-def train(epoch, optimizer, loss_function):
-    tr_loss = 0
-    n_correct = 0
-    nb_tr_steps = 0
-    nb_tr_examples = 0
-    model.train()
-    for _,data in tqdm(enumerate(training_loader, 0)):
-        ids = data['ids'].to(device, dtype = torch.long)
-        mask = data['mask'].to(device, dtype = torch.long)
-        token_type_ids = data['token_type_ids'].to(device, dtype = torch.long)
-        targets = data['targets'].to(device, dtype = torch.long)
-
-        outputs = model(ids, mask, token_type_ids)
-        loss = loss_function(outputs, targets)
-        tr_loss += loss.item()
-        big_val, big_idx = torch.max(outputs.data, dim=1)
-        n_correct += calcuate_accuracy(big_idx, targets)
-
-        nb_tr_steps += 1
-        nb_tr_examples+=targets.size(0)
-        
-        if _%5000==0:
-            loss_step = tr_loss/nb_tr_steps
-            accu_step = (n_correct*100)/nb_tr_examples 
-            print(f"Training Loss per 5000 steps: {loss_step}")
-            print(f"Training Accuracy per 5000 steps: {accu_step}")
-            print(f"Training F1 per 5000 steps: {calcuate_f1(big_idx, targets)}")
-
-        optimizer.zero_grad()
-        loss.backward()
-        # # When using GPU
-        optimizer.step()
-
-    print(f'The Total Accuracy for Epoch {epoch}: {(n_correct*100)/nb_tr_examples}')
-    epoch_loss = tr_loss/nb_tr_steps
-    epoch_accu = (n_correct*100)/nb_tr_examples
-    print(f"Training Loss Epoch: {epoch_loss}")
-    print(f"Training Accuracy Epoch: {epoch_accu}")
-
-    return 
+class CustomTrainer(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False):
+        labels = inputs.get("labels")
+        # forward pass
+        outputs = model(**inputs)
+        logits = outputs.get('logits')
+        # compute custom loss
+        loss_fct = nn.CrossEntropyLoss(weight=torch.tensor([0.1, 0.3]))
+        loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
+        return (loss, outputs) if return_outputs else loss
 
 if __name__ == '__main__':
-    
     #dataset address
     dataset_path = '../Data/Train_Dataset.csv'
-    dataset = pd.read_csv(dataset_path)[["tweet", "sarcastic"]]
+    df = pd.read_csv(dataset_path)
+    df = df.dropna(subset=['tweet'])
 
-    dataset = dataset.dropna(axis = 0)
-    dataset.reset_index(drop=True, inplace=True)
+    train, test = train_test_split(df, test_size=0.1)
 
-    device = 'cpu'
+    train_tweets = train['tweet'].values.tolist()
+    train_labels = train['sarcastic'].values.tolist()
+    test_tweets = test['tweet'].values.tolist()
+    test_labels = test['sarcastic']
 
-    MAX_LEN = 512
-    TRAIN_BATCH_SIZE = 8
-    VALID_BATCH_SIZE = 4
-    EPOCHS = 10
-    LEARNING_RATE = 1e-03
-    tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
+    train_tweets, val_tweets, train_labels, val_labels = train_test_split(train_tweets, train_labels, 
+                                                                        test_size=0.1,random_state=42,stratify=train_labels)
 
-    train_size = 0.9
-    train_data=dataset.sample(frac=train_size,random_state=200)
-    test_data=dataset.drop(train_data.index).reset_index(drop=True)
-    train_data=train_data.reset_index(drop=True)
+    model_name = 'detecting-sarcasim'
+
+    task='sentiment'
+    MODEL = f"cardiffnlp/twitter-roberta-base-{task}"
+
+    tokenizer = AutoTokenizer.from_pretrained(MODEL,
+                                            num_labels=2,
+                                            loss_function_params={"weight": [0.75, 0.25]}
+                                                        )
+    train_encodings = tokenizer(train_tweets, truncation=True, padding=True,return_tensors = 'pt')
+    val_encodings = tokenizer(val_tweets, truncation=True, padding=True,return_tensors = 'pt')
+    test_encodings = tokenizer(test_tweets, truncation=True, padding=True,return_tensors = 'pt')
 
 
-    print("FULL Dataset: {}".format(dataset.shape))
-    print("TRAIN Dataset: {}".format(train_data.shape))
-    print("TEST Dataset: {}".format(test_data.shape))
+    train_dataset = SarcasimDataset(train_encodings, train_labels)
+    val_dataset = SarcasimDataset(val_encodings, val_labels)
+    test_dataset = SarcasimTestDataset(test_encodings)
 
-    training_set = ISarcasmData(train_data, tokenizer, MAX_LEN)
-    testing_set = ISarcasmData(test_data, tokenizer, MAX_LEN)
+    training_args = TrainingArguments(
+        output_dir='./res', evaluation_strategy="steps", num_train_epochs=5, per_device_train_batch_size=32,
+        per_device_eval_batch_size=64, warmup_steps=500, weight_decay=0.01,logging_dir='./logs4',
+        #logging_steps=10,
+        load_best_model_at_end=True,
+    )
 
-    train_params = {'batch_size': TRAIN_BATCH_SIZE,
-                    'shuffle': True,
-                    'num_workers': 0
-                    }
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL)
 
-    test_params = {'batch_size': VALID_BATCH_SIZE,
-                    'shuffle': True,
-                    'num_workers': 0
-                    }
+    model.save_pretrained(MODEL)
 
-    training_loader = DataLoader(training_set, **train_params)
-    testing_loader = DataLoader(testing_set, **test_params)
+    trainer = Trainer(
+        model=model, args=training_args, train_dataset=train_dataset,
+        eval_dataset=val_dataset,
+        compute_metrics=compute_metrics,
+    )
 
-    model = RobertaClass()
-    model.to(device)
+    trainer.train()
 
-    loss_function = torch.nn.CrossEntropyLoss(weight=torch.tensor([1, 3]))
-    optimizer = torch.optim.Adam(params =  model.parameters(), lr=LEARNING_RATE)
+    trainer.evaluate()
 
-    EPOCHS = 5
-    for epoch in range(EPOCHS):
-        train(epoch, optimizer, loss_function)
+
+    #TEST
+
+    pin_memory=False
+    preds = trainer.predict(test_dataset=test_dataset)
+    probs = torch.from_numpy(preds[0]).softmax(1)
+
+    # convert tensors to numpy array
+    predictions = probs.numpy()
+
+    newdf = pd.DataFrame(predictions,columns=['Negative_1','Positive_2'])
+
+
+
+    results = np.argmax(predictions,axis=1)
+    test['sarcastic_result'] =  test['sarcastic'].map(labels)
+
+    print(f1_score(test_labels, test['sarcastic_result']))
+
+    model.predict(test['tweet'])

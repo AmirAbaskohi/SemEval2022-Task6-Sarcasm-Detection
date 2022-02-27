@@ -67,8 +67,8 @@ def labels(x):
         return 1
 
 if __name__ == '__main__':
-    path = '../Data/Train_Dataset.csv'
-    path_test = '../Data/Test_Dataset.csv'
+    path = '../../Data/Train_Dataset.csv'
+    path_test = '../../Data/Test_Dataset.csv'
 
     df = pd.read_csv(path)
     test = pd.read_csv(path_test)

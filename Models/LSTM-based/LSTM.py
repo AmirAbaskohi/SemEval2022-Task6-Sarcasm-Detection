@@ -2,8 +2,8 @@ import Utils
 
 import tensorflow as tf
 
-train_path = '../Data/Train_Dataset.csv'
-test_path = '../Data/Test_Dataset.csv'
+train_path = '../../Data/Train_Dataset.csv'
+test_path = '../../Data/Test_Dataset.csv'
 
 train_data, test_data, tokenizer = Utils.dataset_embedding(train_path, test_path)
 

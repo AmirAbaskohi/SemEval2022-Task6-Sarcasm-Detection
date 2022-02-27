@@ -70,7 +70,7 @@ def wordTokenize(text):
 if __name__ == '__main__':
 
     # dataset address
-    dataset_path = '../Data/Train_Dataset.csv'
+    dataset_path = '../../Data/Train_Dataset.csv'
     df = pd.read_csv(dataset_path)[["tweet", "sarcastic"]]
     df = df[df['tweet'].notna()]
     X, y = df[["tweet"]], df[["sarcastic"]]

@@ -153,7 +153,7 @@ class SarcasmClassifier(pl.LightningModule):
         return AdamW(self.parameters(), lr=1e-4)
     
 if __name__ == "__main__":
-    df = pd.read_csv('../Data/Train_Dataset.csv')[['tweet', 'sarcastic']]
+    df = pd.read_csv('../../Data/Train_Dataset.csv')[['tweet', 'sarcastic']]
     df = df[df['tweet'].notna()]
     
     MODEL_NAME = "google/electra-base-discriminator"

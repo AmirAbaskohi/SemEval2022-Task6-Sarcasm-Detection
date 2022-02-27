@@ -68,8 +68,8 @@ class LSTM_CNN_MODEL(tf.keras.Model):
         return model_output
 
 if __name__ == "__main__":
-    train_path = '../Data/Train_Dataset.csv'
-    test_path = '../Data/Test_Dataset.csv'
+    train_path = '../../Data/Train_Dataset.csv'
+    test_path = '../../Data/Test_Dataset.csv'
 
     train_data, test_data, tokenizer = Utils.dataset_embedding(train_path, test_path)
     

@@ -1,10 +1,7 @@
 import pandas as pd
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings('ignore')
-from sklearn.model_selection import train_test_split
 import torch
 from torch import nn
 from torch.utils.data import Dataset
@@ -66,37 +63,26 @@ class CustomTrainer(Trainer):
 
 if __name__ == '__main__':
     # dataset address
-    dataset_path = '../../Data/Train_Dataset.csv'
-    df = pd.read_csv(dataset_path)
-    df = df.dropna(subset=['tweet'])
-
-    train, test = train_test_split(df, test_size=0.1)
+    train = pd.read_csv('../../Data/Train_Dataset.csv')
+    test = pd.read_csv('../../Data/Test_Dataset.csv')
 
     train_tweets = train['tweet'].values.tolist()
     train_labels = train['sarcastic'].values.tolist()
     test_tweets = test['tweet'].values.tolist()
-    test_labels = test['sarcastic']
-
-    train_tweets, val_tweets, train_labels, val_labels = train_test_split(train_tweets, train_labels, 
-                                                                        test_size=0.1,random_state=42,stratify=train_labels)
+    test_labels = test['sarcastic'].values.tolist()
 
     model_name = 'detecting-Sarcasm'
 
     task='sentiment'
     MODEL = f"cardiffnlp/twitter-roberta-base-{task}"
 
-    tokenizer = AutoTokenizer.from_pretrained(MODEL,
-                                            num_labels=2,
-                                            loss_function_params={"weight": [0.75, 0.25]}
-                                                        )
+    tokenizer = AutoTokenizer.from_pretrained(MODEL, num_labels=2, loss_function_params={"weight": [0.75, 0.25]})
+    
     train_encodings = tokenizer(train_tweets, truncation=True, padding=True,return_tensors = 'pt')
-    val_encodings = tokenizer(val_tweets, truncation=True, padding=True,return_tensors = 'pt')
     test_encodings = tokenizer(test_tweets, truncation=True, padding=True,return_tensors = 'pt')
 
-
     train_dataset = SarcasmDataset(train_encodings, train_labels)
-    val_dataset = SarcasmDataset(val_encodings, val_labels)
-    test_dataset = SarcasmTestDataset(test_encodings)
+    test_dataset = SarcasmDataset(test_encodings, test_labels)
 
     training_args = TrainingArguments(
         output_dir='./res', evaluation_strategy="steps", num_train_epochs=5, per_device_train_batch_size=32,
@@ -110,31 +96,10 @@ if __name__ == '__main__':
 
     trainer = Trainer(
         model=model, args=training_args, train_dataset=train_dataset,
-        eval_dataset=val_dataset,
+        eval_dataset=test_dataset,
         compute_metrics=compute_metrics,
     )
 
     trainer.train()
 
     trainer.evaluate()
-
-
-    #TEST
-
-    pin_memory=False
-    preds = trainer.predict(test_dataset=test_dataset)
-    probs = torch.from_numpy(preds[0]).softmax(1)
-
-    # Convert tensors to numpy array
-    predictions = probs.numpy()
-
-    newdf = pd.DataFrame(predictions,columns=['Negative_1','Positive_2'])
-
-
-
-    results = np.argmax(predictions,axis=1)
-    test['sarcastic_result'] =  test['sarcastic'].map(labels)
-
-    print(f1_score(test_labels, test['sarcastic_result']))
-
-    model.predict(test['tweet'])

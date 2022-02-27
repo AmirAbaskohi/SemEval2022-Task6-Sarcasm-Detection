@@ -47,8 +47,7 @@ class TweetDataset(Dataset):
         }
 
 class TweetDataModule(pl.LightningDataModule):
-    def __init__(self, data:pd.DataFrame, tokenizer: ElectraTokenizer, batch_size: int):
-        self.data = data
+    def __init__(self, tokenizer: ElectraTokenizer, batch_size: int):
         self.tokenizer = tokenizer
         self.batch_size = batch_size
 
@@ -56,11 +55,11 @@ class TweetDataModule(pl.LightningDataModule):
     
     def setup(self, stage: Optional[str] = None):
         ### add for loading 
-        train_df = pd.read_csv('/content/drive/MyDrive/isarcasm/isarcasm_datasets/Train_Dataset.csv')[['tweet', 'sarcastic']]
+        train_df = pd.read_csv('../../Data/Train_Dataset.csv')[['tweet', 'sarcastic']]
         train_df = train_df[train_df['tweet'].notna()]
         self.train_df = train_df.sample(frac=1, random_state=42).reset_index(drop=True)
 
-        test_df = pd.read_csv('/content/drive/MyDrive/isarcasm/isarcasm_datasets/Test_Dataset.csv')[['tweet', 'sarcastic']]
+        test_df = pd.read_csv('../../Data/Test_Dataset.csv')[['tweet', 'sarcastic']]
         test_df = test_df[test_df['tweet'].notna()]
         self.test_df = test_df
 
@@ -153,13 +152,11 @@ class SarcasmClassifier(pl.LightningModule):
         return AdamW(self.parameters(), lr=1e-4)
     
 if __name__ == "__main__":
-    df = pd.read_csv('../../Data/Train_Dataset.csv')[['tweet', 'sarcastic']]
-    df = df[df['tweet'].notna()]
     
     MODEL_NAME = "google/electra-base-discriminator"
     tokenizer = ElectraTokenizer.from_pretrained(MODEL_NAME)
     
-    data_module = TweetDataModule(df, tokenizer, batch_size = 32)
+    data_module = TweetDataModule(tokenizer, batch_size = 32)
     
     clf = SarcasmClassifier(2)
     trainer = Trainer(max_epochs=20, gpus=1, accelerator="gpu", log_every_n_steps=1)

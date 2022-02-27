@@ -11,7 +11,7 @@ from transformers import BertForSequenceClassification
 from sklearn.metrics import accuracy_score, f1_score
 from transformers import Trainer
 
-class SarcasimDataset(torch.utils.data.Dataset):
+class SarcasmDataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels):
         self.encodings = encodings
         self.labels = labels
@@ -25,7 +25,7 @@ class SarcasimDataset(torch.utils.data.Dataset):
         return len(self.labels)
     
 ## Test Dataset
-class SarcasimTestDataset(torch.utils.data.Dataset):
+class SarcasmTestDataset(torch.utils.data.Dataset):
     def __init__(self, encodings):
         self.encodings = encodings
 
@@ -40,7 +40,7 @@ def compute_metrics(p):
     pred = np.argmax(pred, axis=1)
 
     accuracy = accuracy_score(y_true=labels, y_pred=pred)
-    f1 = f1_score(labels, pred, average='weighted')
+    f1 = f1_score(labels, pred)
 
     return {"accuracy": accuracy,"f1_score":f1}
 
@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
     train_tweets, val_tweets, train_labels, val_labels = train_test_split(train_tweets, train_labels, 
                                                                         test_size=0.1,random_state=42,stratify=train_labels)
-    model_name = 'detecting-sarcasim'
+    model_name = 'detecting-Sarcasm'
 
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', num_labels=2,
                                             loss_function_params={"weight": [0.75, 0.25]})
@@ -77,9 +77,9 @@ if __name__ == '__main__':
     val_encodings = tokenizer(val_tweets, padding=True, truncation=True, max_length=512)
     test_encodings = tokenizer(test_tweets, padding=True, truncation=True, max_length=512)
 
-    train_dataset = SarcasimDataset(train_encodings, train_labels)
-    val_dataset = SarcasimDataset(val_encodings, val_labels)
-    test_dataset = SarcasimTestDataset(test_encodings)
+    train_dataset = SarcasmDataset(train_encodings, train_labels)
+    val_dataset = SarcasmDataset(val_encodings, val_labels)
+    test_dataset = SarcasmTestDataset(test_encodings)
 
     training_args = TrainingArguments(
         output_dir="output",

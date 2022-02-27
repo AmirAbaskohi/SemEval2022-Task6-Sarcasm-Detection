@@ -69,7 +69,7 @@ def wordTokenize(text):
 
 if __name__ == '__main__':
 
-    #dataset address
+    # dataset address
     dataset_path = '../Data/Train_Dataset.csv'
     df = pd.read_csv(dataset_path)[["tweet", "sarcastic"]]
     df = df[df['tweet'].notna()]
@@ -85,21 +85,21 @@ if __name__ == '__main__':
     df_idf.sort_values(by=['idf_weights'])
 
 
-    # Result with count vectorizer
+    # result with count vectorizer
     X_train = X_train_counts
     class_weight= {1: 3, 0: 1}
 
     clf = SVC(C=10, kernel='rbf', class_weight=class_weight)
     report_acc_cv(clf, X_train, y.values.ravel(), "svm-count-vectorizer")
 
-    # Result with TF-IDF
+    # result with TF-IDF
     X_train = X_train_tfidf
     class_weight= {1: 3, 0: 1}
 
     clf = SVC(C=10, kernel='rbf', class_weight=class_weight)
     report_acc_cv(clf, X_train, y.values.ravel(), "svm-TF-IDF")
 
-    # Result with BERT(Word Tokenization format)
+    # result with BERT(Word Tokenization format)
     bert_version = 'WORD'
 
     ctx = mx.gpu(0)
@@ -115,7 +115,7 @@ if __name__ == '__main__':
     clf = SVC(C=10, kernel='rbf', class_weight=class_weight)
     report_acc_cv(clf, bert_word_training_features, y.values.ravel(), "svm-BERT")
 
-    # Result with Word2Vec
+    # result with Word2Vec
 
     embedding = 'WORD2VEC_WITH_STOP'
     words = X['tweet'].apply(wordTokenize)

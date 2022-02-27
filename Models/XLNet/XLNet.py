@@ -66,8 +66,8 @@ if __name__ == '__main__':
 
     X_train = train['tweet']
     y_train = train['sarcastic']
-    X_test = train['text']
-    y_test = train['sarcastic']
+    X_test = test['text']
+    y_test = test['sarcastic']
 
     X_train = X_train.tolist()
     X_test = X_test.tolist()

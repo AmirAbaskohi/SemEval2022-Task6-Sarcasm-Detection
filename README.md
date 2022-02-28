@@ -82,7 +82,7 @@ dataset and mutation-based data augmentation.
 
 ## Acknowledgements
 We want to convey our heartfelt gratitude to
-Prof. Yadollah Yaghoobzadeh of the University
+Prof. Yadollah Yaghoobzadeh from the University
 of Tehran, who provided us with invaluable advice
 during our research. We would also like to thank
 Ali Edalat from the University of Tehran, who provided

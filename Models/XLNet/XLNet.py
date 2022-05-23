@@ -74,7 +74,7 @@ if __name__ == '__main__':
     y_train = y_train.tolist()
     y_test = y_test.tolist()
 
-    model_name = 'detecting-sarcasim'
+    model_name = 'detecting-sarcasm'
     task='sentiment'
     MODEL = 'xlnet-base-cased'
 
@@ -83,8 +83,8 @@ if __name__ == '__main__':
     train_encodings = tokenizer(X_train, truncation=True, padding=True,return_tensors = 'pt')
     test_encodings = tokenizer(X_test,truncation=True, padding=True,return_tensors = 'pt')
 
-    train_dataset = SarcasimDataset(train_encodings, y_train)
-    test_dataset = SarcasimDataset(test_encodings, y_test)
+    train_dataset = SarcasmDataset(train_encodings, y_train)
+    test_dataset = SarcasmDataset(test_encodings, y_test)
 
     training_args = TrainingArguments(
         output_dir='./res', num_train_epochs=5, per_device_train_batch_size=32, warmup_steps=500, weight_decay=0.01,logging_dir='./logs4'

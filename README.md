@@ -89,4 +89,16 @@ Ali Edalat from the University of Tehran, who provided
 us with the initial proposals for resolving the
 dataset’s imbalance problem.
 
+## Cite
+```
+@inproceedings{
+abaskohi2022utnlp,
+title={{UTNLP} at SemEval-2022 Task 6: A Comparative Analysis of Sarcasm Detection using generative-based and mutation-based data augmentation},
+author={Amirhossein Abaskohi and Arash Rasouli and Tanin Zeraati and Behnam Bahrak},
+booktitle={The 16th International Workshop on Semantic Evaluation},
+year={2022},
+url={https://openreview.net/forum?id=S98ez3WCwxc}
+}
+```
+
 *Amirhossein Abaskohi, Arash Rasouli, Tanin Zeraati, Behnam Bahrak*

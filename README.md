@@ -91,13 +91,20 @@ dataset’s imbalance problem.
 
 ## Cite
 ```
-@inproceedings{
-abaskohi2022utnlp,
-title={{UTNLP} at SemEval-2022 Task 6: A Comparative Analysis of Sarcasm Detection using generative-based and mutation-based data augmentation},
-author={Amirhossein Abaskohi and Arash Rasouli and Tanin Zeraati and Behnam Bahrak},
-booktitle={The 16th International Workshop on Semantic Evaluation},
-year={2022},
-url={https://openreview.net/forum?id=S98ez3WCwxc}
+@inproceedings{abaskohi-etal-2022-utnlp,
+    title = "{UTNLP} at {S}em{E}val-2022 Task 6: A Comparative Analysis of Sarcasm Detection using generative-based and mutation-based data augmentation",
+    author = "Abaskohi, Amirhossein  and
+      Rasouli, Arash  and
+      Zeraati, Tanin  and
+      Bahrak, Behnam",
+    booktitle = "Proceedings of the 16th International Workshop on Semantic Evaluation (SemEval-2022)",
+    month = jul,
+    year = "2022",
+    address = "Seattle, United States",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2022.semeval-1.135",
+    pages = "962--969",
+    abstract = "Sarcasm is a term that refers to the use of words to mock, irritate, or amuse someone. It is commonly used on social media. The metaphorical and creative nature of sarcasm presents a significant difficulty for sentiment analysis systems based on affective computing. The methodology and results of our team, UTNLP, in the SemEval-2022 shared task 6 on sarcasm detection are presented in this paper. We put different models, and data augmentation approaches to the test and report on which one works best. The tests begin with traditional machine learning models and progress to transformer-based and attention-based models. We employed data augmentation based on data mutation and data generation. Using RoBERTa and mutation-based data augmentation, our best approach achieved an F1-score of 0.38 in the competition{'}s evaluation phase. After the competition, we fixed our model{'}s flaws and achieved anF1-score of 0.414.",
 }
 ```
 

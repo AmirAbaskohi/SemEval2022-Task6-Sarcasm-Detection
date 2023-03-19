@@ -1,4 +1,4 @@
-# UTNLP at SemEval-2022 Task 6: A Comparative Analysis of Sarcasm Detection Using Generative-based and mutation-based Data Augmentation
+# UTNLP at SemEval-2022 Task 6: A Comparative Analysis of Sarcasm Detection Using Generative-based and Mutation-based Data Augmentation
 
 ## Abstract
 Sarcasm is a term that refers to the use of words to mock, irritate, or amuse someone. It is commonly used on social media. The metaphorical and creative nature of sarcasm presents a significant difficulty for sentiment analysis systems based on affective computing. The technique and results of our team, UTNLP, in the SemEval-2022 shared task 6 on sarcasm detection are presented in this paper. We put different models, and data augmentation approaches to the test and report on which one works best. The tests begin with fundamental machine learning models and progress to transformer-based and attention-based models. We employed data augmentation based on data mutation and data generation. Using RoBERTa and mutation-based data augmentation, our best approach achieved an F1-score of 0.38 in the competition’s evaluation phase. After the competition, we fixed our model’s flaws and achieved an F1-score of 0.414.
@@ -37,6 +37,17 @@ ____ Data
 ```
 
 `Cleaned Dataset` includes main dataset with preprocessing. `Foregin Dataset` includes our secondary datasets like `Sentiment 140`, they available in <a href="https://drive.google.com/drive/folders/1NSXGPRQnuSP2ipNG6-I-7FF-tR9iZvVE?usp=sharing">this link</a>. `Main Dataset` is the task train dataset. `Mutant Dataset` is our mutated version of main task dataset. Each dataset name has a three bit in it. First bit shows using word elimination. Second bit is for word replacement and third one is for shuffling. `Train_Dataset.csv` is the concatation of main task dataset and `mutant100` which we find it the best dataset for the models. `Test_Dataset.csv` is the task test dataset with labels.
+
+Here is the dataset mapping:
+
+| **File Name** |          **Dataset**         |
+|:-------------:|:----------------------------:|
+|     train1    | Sarcasm Headlines Dataset V1 |
+|     train2    | Sarcasm Headlines Dataset V2 |
+|     train3    |     Twitter News Dataset     |
+|     train4    |     Sentiment 140 Dataset    |
+|     train5    |             SPIRS            |
+|     train6    | Twitter US Airline Sentiment |
 
 ## Data Augmentation
 In this directoy, we have our data augmentor models.
